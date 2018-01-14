@@ -8,10 +8,12 @@ Hate manually entering wifi passwords off of some piece of paper? Hotspot will d
 
 We were at Banff with the family and were getting set up with the WiFi at our cabin. There was a slip of paper with the wifi SSID and password. We all had to manually connect one by one till one of us thought about what if there was an app that could just read the wifi credentials and connect to it.
 
-## License
+# License
 
 ```
-Copyright 2018 Jessica Antonette Prieto and George Antonious
+MIT License
+
+Copyright (c) 2018 Jessica Antonette Prieto and George Antonious
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
