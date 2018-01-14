@@ -33,10 +33,15 @@ import ca.prieto.hotspot.utils.WifiUtils;
 import id.zelory.compressor.Compressor;
 
 public class PhotoActivity extends AppCompatActivity {
-    CameraView cameraView;
-    Button captureImage;
-    Button newImage;
-    ImageView capturedImage;
+    private View captureImageLayout;
+    private View loadingLayout;
+    private View connectToWifiLayout;
+
+    private CameraView cameraView;
+    private Button captureImage;
+
+    private Button newImage;
+    private ImageView capturedImage;
     EditText scannedText;
     String datapath;
     private TessBaseAPI mTess;
@@ -45,35 +50,38 @@ public class PhotoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo);
+
+        captureImageLayout = findViewById(R.id.take_picture_layout);
+        loadingLayout = findViewById(R.id.loading_layout);
+        connectToWifiLayout = findViewById(R.id.connect_to_wifi_layout);
+
+        showCaptureImage();
+
         cameraView = (CameraView) findViewById(R.id.cameraView);
         captureImage = (Button) findViewById(R.id.captureImage);
-        newImage = (Button) findViewById(R.id.newImage);
+        //newImage = (Button) findViewById(R.id.newImage);
         capturedImage = (ImageView) findViewById(R.id.capturedImage);
-        scannedText = (EditText) findViewById(R.id.networkName);
+        //scannedText = (EditText) findViewById(R.id.networkName);
         datapath = getFilesDir()+ "/tesseract/";
 
         capturedImage.setVisibility(View.GONE);
         newImage.setVisibility(View.GONE);
 
-
         cameraView.addCameraListener(new CameraListener() {
             @Override
             public void onPictureTaken(byte[] picture) {
+                showLoading();
+
                 CameraUtils.decodeBitmap(picture, new CameraUtils.BitmapCallback() {
                     @Override
                     public void onBitmapReady(Bitmap bitmap) {
                         capturedImage.setImageBitmap(bitmap);
 
                         ParsingUtils.parseNetworkCredentials(PhotoActivity.this, bitmap)
-                            .doOnNext(creds -> {
+                            .subscribe(creds -> {
                                 scannedText.setText(creds.getSsid() + "," + creds.getPassword());
-                            })
-                            .flatMapCompletable(creds ->
-                                    WifiUtils.connectToWifi(PhotoActivity.this,
-                                            creds.getSsid(),
-                                            creds.getPassword())
-                            )
-                            .subscribe();
+                                showWifiDetails();
+                            });
                     }
                 });
             }
@@ -101,6 +109,24 @@ public class PhotoActivity extends AppCompatActivity {
                 finish();
             }
         });
+    }
+
+    private void showCaptureImage() {
+        captureImageLayout.setVisibility(View.VISIBLE);
+        loadingLayout.setVisibility(View.GONE);
+        connectToWifiLayout.setVisibility(View.GONE);
+    }
+
+    private void showLoading() {
+        captureImageLayout.setVisibility(View.GONE);
+        loadingLayout.setVisibility(View.VISIBLE);
+        connectToWifiLayout.setVisibility(View.GONE);
+    }
+
+    private void showWifiDetails() {
+        captureImageLayout.setVisibility(View.GONE);
+        loadingLayout.setVisibility(View.GONE);
+        connectToWifiLayout.setVisibility(View.VISIBLE);
     }
 
     private String saveToInternalStorage(Bitmap bitmapImage){
