@@ -7,7 +7,7 @@
 
     <item>
         <bitmap android:src="@drawable/splash_screen"
-            android:gravity="fill|center````" />
+            android:gravity="fill|center" />
 
     </item>
 
