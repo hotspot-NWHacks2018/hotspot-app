@@ -30,11 +30,13 @@ import java.util.List;
 import ca.prieto.hotspot.R;
 import ca.prieto.hotspot.utils.ParsingUtils;
 import ca.prieto.hotspot.utils.WifiUtils;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 
 public class PhotoActivity extends AppCompatActivity {
     private View captureImageLayout;
     private View loadingLayout;
     private View connectToWifiLayout;
+    private View actionCard;
 
     private CameraView cameraView;
     private Button captureImage;
@@ -58,6 +60,9 @@ public class PhotoActivity extends AppCompatActivity {
         captureImageLayout = findViewById(R.id.take_picture_layout);
         loadingLayout = findViewById(R.id.loading_layout);
         connectToWifiLayout = findViewById(R.id.connect_to_wifi_layout);
+        actionCard = findViewById(R.id.action_card);
+
+        //actionCard.animate().translationYBy()
 
         showCaptureImage();
 
@@ -73,26 +78,31 @@ public class PhotoActivity extends AppCompatActivity {
         networkNameEditText = findViewById(R.id.NetworkName);
         passwordEditText = findViewById(R.id.Password);
 
-        capturedImage.setVisibility(View.GONE);
-        newImage.setVisibility(View.GONE);
+        //capturedImage.setVisibility(View.GONE);
+        //newImage.setVisibility(View.GONE);
 
         connectButton.setOnClickListener(v -> {
-            WifiUtils.connectToWifi(this, networkNameEditText.getText().toString(),
-                    passwordEditText.getText().toString())
-                    .subscribe(() -> Toast.makeText(this, "Connected", Toast.LENGTH_SHORT),
-                               t -> Toast.makeText(this, "Failed", Toast.LENGTH_SHORT));
+            WifiUtils.connectToWifi(this, networkNameEditText.getText().toString(), passwordEditText.getText().toString())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(() -> Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show(),
+                               t -> Toast.makeText(this, "Failed", Toast.LENGTH_SHORT).show());
         });
+
+        recaptureButton.setOnClickListener(v -> {
+            cameraView.start();
+            showCaptureImage();
+        });
+
 
         cameraView.addCameraListener(new CameraListener() {
             @Override
             public void onPictureTaken(byte[] picture) {
-                showLoading();
                 cameraView.stop();
 
                 CameraUtils.decodeBitmap(picture, new CameraUtils.BitmapCallback() {
                     @Override
                     public void onBitmapReady(Bitmap bitmap) {
-                        capturedImage.setImageBitmap(bitmap);
+//                        capturedImage.setImageBitmap(bitmap);
 
                         ParsingUtils.parseNetworkCredentials(PhotoActivity.this, bitmap)
                             .subscribe(creds -> {
@@ -108,25 +118,26 @@ public class PhotoActivity extends AppCompatActivity {
         captureImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                showLoading();
                 cameraView.captureSnapshot();
 
-                cameraView.setVisibility(View.GONE);
-                captureImage.setVisibility(View.GONE);
+                //cameraView.setVisibility(View.GONE);
+              //  captureImage.setVisibility(View.GONE);
 
-                capturedImage.setVisibility(View.VISIBLE);
-                newImage.setVisibility(View.VISIBLE);
-                scannedText.setVisibility(View.VISIBLE);
+//                capturedImage.setVisibility(View.VISIBLE);
+  //              newImage.setVisibility(View.VISIBLE);
+    //            scannedText.setVisibility(View.VISIBLE);
             }
         });
 
-        newImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(PhotoActivity.this, PhotoActivity.class);
-                startActivity(intent);
-                finish();
-            }
-        });
+//        newImage.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                Intent intent = new Intent(PhotoActivity.this, PhotoActivity.class);
+//                startActivity(intent);
+//                finish();
+//            }
+//        });
     }
 
     private void showCaptureImage() {

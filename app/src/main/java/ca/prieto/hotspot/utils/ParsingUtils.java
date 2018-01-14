@@ -6,7 +6,9 @@ import android.graphics.Bitmap;
 import com.googlecode.tesseract.android.TessBaseAPI;
 
 import io.reactivex.Observable;
+import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
 
 
 /**
@@ -18,7 +20,7 @@ public class ParsingUtils {
     public static Observable<NetworkCredentials> parseNetworkCredentials(Context context, Bitmap image) {
         TessBaseAPI tessBaseAPI = TessUtils.getTestBaseApi(context);
         return Observable.just(tessBaseAPI)
-                .observeOn(AndroidSchedulers.mainThread())
+                .observeOn(Schedulers.io())
                 .doOnNext(api -> api.setImage(image))
                 .map(api -> api.getUTF8Text())
                 .map(ParsingUtils::parseStringToNetworkCreds)
