@@ -3,9 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:background="@color/colorAccent"
+    android:background="@color/colorPrimaryDark"
     android:layout_height="match_parent"
-    tools:context="ca.prieto.hotspot.view.PhotoActivity">
+    tools:context="ca.prieto.hotspot.view.PhotoActivity"
+    android:fitsSystemWindows="true">
 
     <com.otaliastudios.cameraview.CameraView
         android:id="@+id/cameraView"
@@ -23,15 +24,13 @@
         android:id="@+id/action_card"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="0dp"
-        android:layout_marginEnd="0dp"
-        android:layout_marginStart="0dp"
-        android:layout_marginTop="0dp"
+        android:layout_marginTop="-8dp"
+        app:cardCornerRadius="0dp"
         app:cardElevation="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/cameraView" >
+        app:layout_constraintTop_toBottomOf="@+id/cameraView">
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -39,8 +38,10 @@
             android:layout_gravity="center">
 
             <include layout="@layout/take_picture_layout" />
-            <include layout="@layout/loading"/>
-            <include layout="@layout/connect_to_wifi_activity"/>
+
+            <include layout="@layout/loading" />
+
+            <include layout="@layout/connect_to_wifi_activity" />
 
         </FrameLayout>
 

@@ -5,11 +5,11 @@ import android.os.Bundle;
 
 import ca.prieto.hotspot.R;
 
-public class HotspotSetupActivity extends AppCompatActivity {
+public class ConnectedActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_hotspot_setup);
+        setContentView(R.layout.activity_connected);
     }
 }

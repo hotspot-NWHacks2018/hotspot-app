@@ -33,25 +33,11 @@ public class ParsingUtils {
     private static NetworkCredentials parseStringToNetworkCreds(String rawNetworkCreds) {
         String[] tokenizedNetworkCreds = rawNetworkCreds.split("[!@#$%^&*():[\\\\]\\s]+");
 
-        if (tokenizedNetworkCreds.length == 4) {
+        if (tokenizedNetworkCreds.length >= 4) {
             // most likely 2 of those words are labels for the ssid and pass
             return new NetworkCredentials(tokenizedNetworkCreds[1], tokenizedNetworkCreds[3]);
-        } else if (tokenizedNetworkCreds.length > 4) {
-            String ssidGuess = "";
-            String passGuess = "";
-
-            for (String token: tokenizedNetworkCreds) {
-                if (token.length() > ssidGuess.length() && ssidGuess.isEmpty()) {
-                    ssidGuess = token;
-                } else if (token.length() > ssidGuess.length() && passGuess.isEmpty()) {
-                    passGuess = token;
-                } else if (token.length() > passGuess.length()) {
-                    ssidGuess = passGuess;
-                    passGuess = token;
-                }
-            }
-
-            return new NetworkCredentials(ssidGuess, passGuess);
+        } else if (tokenizedNetworkCreds.length == 2) {
+            return new NetworkCredentials(tokenizedNetworkCreds[0], tokenizedNetworkCreds[1]);
         }
         // we tried but couldnt make anything good enough out
         return new NetworkCredentials("", "");
