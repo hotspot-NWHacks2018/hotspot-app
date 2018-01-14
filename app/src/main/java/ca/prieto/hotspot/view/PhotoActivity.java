@@ -5,31 +5,24 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Camera;
-import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.googlecode.tesseract.android.TessBaseAPI;
 import com.otaliastudios.cameraview.CameraListener;
 import com.otaliastudios.cameraview.CameraUtils;
 import com.otaliastudios.cameraview.CameraView;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -56,7 +49,7 @@ public class PhotoActivity extends AppCompatActivity {
         captureImage = (Button) findViewById(R.id.captureImage);
         newImage = (Button) findViewById(R.id.newImage);
         capturedImage = (ImageView) findViewById(R.id.capturedImage);
-        scannedText = (EditText) findViewById(R.id.scannedText);
+        scannedText = (EditText) findViewById(R.id.networkName);
         datapath = getFilesDir()+ "/tesseract/";
 
         capturedImage.setVisibility(View.GONE);
@@ -81,7 +74,6 @@ public class PhotoActivity extends AppCompatActivity {
                                             creds.getPassword())
                             )
                             .subscribe();
-
                     }
                 });
             }
