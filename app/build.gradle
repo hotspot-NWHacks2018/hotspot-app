@@ -43,4 +43,6 @@ dependencies {
 
     compile 'com.github.dmytrodanylyk.circular-progress-button:library:1.1.3'
     implementation 'com.android.support:cardview-v7:26.+'
+    compile 'com.thanosfisherman.wifiutils:wifiutils:1.3.3'
+    compile 'com.karumi:dexter:4.2.0'
 }

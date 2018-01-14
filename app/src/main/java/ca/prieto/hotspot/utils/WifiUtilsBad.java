@@ -14,7 +14,7 @@ import static android.content.Context.WIFI_SERVICE;
  * Created by George on 2018-01-13.
  */
 
-public class WifiUtils {
+public class WifiUtilsBad {
 
     public static Completable connectToWifi(Context context, String ssid, String password) {
         WifiConfiguration wifiConfig = new WifiConfiguration();

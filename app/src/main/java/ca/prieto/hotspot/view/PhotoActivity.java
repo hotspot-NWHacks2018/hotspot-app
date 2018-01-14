@@ -1,8 +1,8 @@
 package ca.prieto.hotspot.view;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.support.v7.app.AppCompatActivity;
@@ -14,9 +14,16 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.googlecode.tesseract.android.TessBaseAPI;
+import com.karumi.dexter.Dexter;
+import com.karumi.dexter.PermissionToken;
+import com.karumi.dexter.listener.PermissionDeniedResponse;
+import com.karumi.dexter.listener.PermissionGrantedResponse;
+import com.karumi.dexter.listener.PermissionRequest;
+import com.karumi.dexter.listener.single.PermissionListener;
 import com.otaliastudios.cameraview.CameraListener;
 import com.otaliastudios.cameraview.CameraUtils;
 import com.otaliastudios.cameraview.CameraView;
+import com.thanosfisherman.wifiutils.WifiUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -29,7 +36,7 @@ import java.util.List;
 
 import ca.prieto.hotspot.R;
 import ca.prieto.hotspot.utils.ParsingUtils;
-import ca.prieto.hotspot.utils.WifiUtils;
+import ca.prieto.hotspot.utils.WifiUtilsBad;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 
 public class PhotoActivity extends AppCompatActivity {
@@ -57,12 +64,33 @@ public class PhotoActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo);
 
+        Dexter.withActivity(this)
+                .withPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+                .withListener(new PermissionListener() {
+                    @Override
+                    public void onPermissionGranted(PermissionGrantedResponse response) {
+
+                    }
+
+                    @Override
+                    public void onPermissionDenied(PermissionDeniedResponse response) {
+
+                    }
+
+                    @Override
+                    public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
+
+                    }
+                })
+                .check();
+
         captureImageLayout = findViewById(R.id.take_picture_layout);
         loadingLayout = findViewById(R.id.loading_layout);
         connectToWifiLayout = findViewById(R.id.connect_to_wifi_layout);
         actionCard = findViewById(R.id.action_card);
 
-        //actionCard.animate().translationYBy()
+        actionCard.setY(500);
+        actionCard.animate().translationYBy(-500).setDuration(2).start();
 
         showCaptureImage();
 
@@ -82,10 +110,20 @@ public class PhotoActivity extends AppCompatActivity {
         //newImage.setVisibility(View.GONE);
 
         connectButton.setOnClickListener(v -> {
-            WifiUtils.connectToWifi(this, networkNameEditText.getText().toString(), passwordEditText.getText().toString())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(() -> Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show(),
-                               t -> Toast.makeText(this, "Failed", Toast.LENGTH_SHORT).show());
+            WifiUtils.withContext(this)
+                    .connectWith(networkNameEditText.getText().toString(), passwordEditText.getText().toString())
+                    .onConnectionResult(isSuccess -> {
+                        if (isSuccess) {
+                            Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(this, "Failed", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .start();
+//            WifiUtilsBad.connectToWifi(this, networkNameEditText.getText().toString(), passwordEditText.getText().toString())
+//                    .observeOn(AndroidSchedulers.mainThread())
+//                    .subscribe(() -> Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show(),
+//                               t -> Toast.makeText(this, "Failed", Toast.LENGTH_SHORT).show());
         });
 
         recaptureButton.setOnClickListener(v -> {
@@ -105,6 +143,7 @@ public class PhotoActivity extends AppCompatActivity {
 //                        capturedImage.setImageBitmap(bitmap);
 
                         ParsingUtils.parseNetworkCredentials(PhotoActivity.this, bitmap)
+                            .onErrorReturnItem(new ParsingUtils.NetworkCredentials("", ""))
                             .subscribe(creds -> {
                                 showWifiDetails();
                                 networkNameEditText.setText(creds.getSsid());
