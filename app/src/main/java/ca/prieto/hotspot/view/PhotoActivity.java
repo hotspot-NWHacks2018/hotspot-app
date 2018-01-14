@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.googlecode.tesseract.android.TessBaseAPI;
 import com.otaliastudios.cameraview.CameraListener;
@@ -27,10 +28,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import ca.prieto.hotspot.R;
-import ca.prieto.hotspot.utils.ImageUtils;
 import ca.prieto.hotspot.utils.ParsingUtils;
 import ca.prieto.hotspot.utils.WifiUtils;
-import id.zelory.compressor.Compressor;
 
 public class PhotoActivity extends AppCompatActivity {
     private View captureImageLayout;
@@ -39,6 +38,11 @@ public class PhotoActivity extends AppCompatActivity {
 
     private CameraView cameraView;
     private Button captureImage;
+
+    private Button recaptureButton;
+    private Button connectButton;
+    private EditText networkNameEditText;
+    private EditText passwordEditText;
 
     private Button newImage;
     private ImageView capturedImage;
@@ -57,20 +61,33 @@ public class PhotoActivity extends AppCompatActivity {
 
         showCaptureImage();
 
-        cameraView = (CameraView) findViewById(R.id.cameraView);
-        captureImage = (Button) findViewById(R.id.captureImage);
+        cameraView = findViewById(R.id.cameraView);
+        captureImage = findViewById(R.id.captureImage);
         //newImage = (Button) findViewById(R.id.newImage);
-        capturedImage = (ImageView) findViewById(R.id.capturedImage);
-        //scannedText = (EditText) findViewById(R.id.networkName);
+        capturedImage = findViewById(R.id.capturedImage);
+        //scannedText = findViewById(R.id.networkName);
         datapath = getFilesDir()+ "/tesseract/";
+
+        recaptureButton = findViewById(R.id.recaptureButton);
+        connectButton = findViewById(R.id.connectButton);
+        networkNameEditText = findViewById(R.id.NetworkName);
+        passwordEditText = findViewById(R.id.Password);
 
         capturedImage.setVisibility(View.GONE);
         newImage.setVisibility(View.GONE);
+
+        connectButton.setOnClickListener(v -> {
+            WifiUtils.connectToWifi(this, networkNameEditText.getText().toString(),
+                    passwordEditText.getText().toString())
+                    .subscribe(() -> Toast.makeText(this, "Connected", Toast.LENGTH_SHORT),
+                               t -> Toast.makeText(this, "Failed", Toast.LENGTH_SHORT));
+        });
 
         cameraView.addCameraListener(new CameraListener() {
             @Override
             public void onPictureTaken(byte[] picture) {
                 showLoading();
+                cameraView.stop();
 
                 CameraUtils.decodeBitmap(picture, new CameraUtils.BitmapCallback() {
                     @Override
@@ -79,8 +96,9 @@ public class PhotoActivity extends AppCompatActivity {
 
                         ParsingUtils.parseNetworkCredentials(PhotoActivity.this, bitmap)
                             .subscribe(creds -> {
-                                scannedText.setText(creds.getSsid() + "," + creds.getPassword());
                                 showWifiDetails();
+                                networkNameEditText.setText(creds.getSsid());
+                                passwordEditText.setText(creds.getPassword());
                             });
                     }
                 });
