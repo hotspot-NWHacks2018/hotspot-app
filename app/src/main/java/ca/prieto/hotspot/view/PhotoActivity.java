@@ -35,6 +35,8 @@ import java.util.List;
 
 import ca.prieto.hotspot.R;
 import ca.prieto.hotspot.utils.ImageUtils;
+import ca.prieto.hotspot.utils.ParsingUtils;
+import ca.prieto.hotspot.utils.WifiUtils;
 import id.zelory.compressor.Compressor;
 
 public class PhotoActivity extends AppCompatActivity {
@@ -69,18 +71,17 @@ public class PhotoActivity extends AppCompatActivity {
                     public void onBitmapReady(Bitmap bitmap) {
                         capturedImage.setImageBitmap(bitmap);
 
-                        checkFile(new File(datapath + "tessdata/"));
+                        ParsingUtils.parseNetworkCredentials(PhotoActivity.this, bitmap)
+                            .doOnNext(creds -> {
+                                scannedText.setText(creds.getSsid() + "," + creds.getPassword());
+                            })
+                            .flatMapCompletable(creds ->
+                                    WifiUtils.connectToWifi(PhotoActivity.this,
+                                            creds.getSsid(),
+                                            creds.getPassword())
+                            )
+                            .subscribe();
 
-                        //initialize Tesseract API
-                        String lang = "eng";
-                        mTess = new TessBaseAPI();
-                        mTess.init(datapath, lang);
-                        String OCRresult = null;
-                        mTess.setImage(bitmap);
-                        OCRresult = mTess.getUTF8Text();
-
-                        List<String> parsedText = parseText(OCRresult);
-                        scannedText.setText(parsedText.get(parsedText.size() - 1));
                     }
                 });
             }
