@@ -1,8 +1,8 @@
 package ca.prieto.hotspot.view;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.support.v7.app.AppCompatActivity;
@@ -11,11 +11,19 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.googlecode.tesseract.android.TessBaseAPI;
+import com.karumi.dexter.Dexter;
+import com.karumi.dexter.PermissionToken;
+import com.karumi.dexter.listener.PermissionDeniedResponse;
+import com.karumi.dexter.listener.PermissionGrantedResponse;
+import com.karumi.dexter.listener.PermissionRequest;
+import com.karumi.dexter.listener.single.PermissionListener;
 import com.otaliastudios.cameraview.CameraListener;
 import com.otaliastudios.cameraview.CameraUtils;
 import com.otaliastudios.cameraview.CameraView;
+import com.thanosfisherman.wifiutils.WifiUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,16 +35,26 @@ import java.util.Arrays;
 import java.util.List;
 
 import ca.prieto.hotspot.R;
-import ca.prieto.hotspot.utils.ImageUtils;
 import ca.prieto.hotspot.utils.ParsingUtils;
-import ca.prieto.hotspot.utils.WifiUtils;
-import id.zelory.compressor.Compressor;
+import ca.prieto.hotspot.utils.WifiUtilsBad;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 
 public class PhotoActivity extends AppCompatActivity {
-    CameraView cameraView;
-    Button captureImage;
-    Button newImage;
-    ImageView capturedImage;
+    private View captureImageLayout;
+    private View loadingLayout;
+    private View connectToWifiLayout;
+    private View actionCard;
+
+    private CameraView cameraView;
+    private Button captureImage;
+
+    private Button recaptureButton;
+    private Button connectButton;
+    private EditText networkNameEditText;
+    private EditText passwordEditText;
+
+    private Button newImage;
+    private ImageView capturedImage;
     EditText scannedText;
     String datapath;
     private TessBaseAPI mTess;
@@ -45,35 +63,92 @@ public class PhotoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo);
-        cameraView = (CameraView) findViewById(R.id.cameraView);
-        captureImage = (Button) findViewById(R.id.captureImage);
-        newImage = (Button) findViewById(R.id.newImage);
-        capturedImage = (ImageView) findViewById(R.id.capturedImage);
-        scannedText = (EditText) findViewById(R.id.networkName);
+
+        Dexter.withActivity(this)
+                .withPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+                .withListener(new PermissionListener() {
+                    @Override
+                    public void onPermissionGranted(PermissionGrantedResponse response) {
+
+                    }
+
+                    @Override
+                    public void onPermissionDenied(PermissionDeniedResponse response) {
+
+                    }
+
+                    @Override
+                    public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
+
+                    }
+                })
+                .check();
+
+        captureImageLayout = findViewById(R.id.take_picture_layout);
+        loadingLayout = findViewById(R.id.loading_layout);
+        connectToWifiLayout = findViewById(R.id.connect_to_wifi_layout);
+        actionCard = findViewById(R.id.action_card);
+
+        actionCard.setY(500);
+        actionCard.animate().translationYBy(-500).setDuration(2).start();
+
+        showCaptureImage();
+
+        cameraView = findViewById(R.id.cameraView);
+        captureImage = findViewById(R.id.captureImage);
+        //newImage = (Button) findViewById(R.id.newImage);
+        capturedImage = findViewById(R.id.capturedImage);
+        //scannedText = findViewById(R.id.networkName);
         datapath = getFilesDir()+ "/tesseract/";
 
-        capturedImage.setVisibility(View.GONE);
-        newImage.setVisibility(View.GONE);
+        recaptureButton = findViewById(R.id.recaptureButton);
+        connectButton = findViewById(R.id.connectButton);
+        networkNameEditText = findViewById(R.id.NetworkName);
+        passwordEditText = findViewById(R.id.Password);
+
+        //capturedImage.setVisibility(View.GONE);
+        //newImage.setVisibility(View.GONE);
+
+        connectButton.setOnClickListener(v -> {
+            WifiUtils.withContext(this)
+                    .connectWith(networkNameEditText.getText().toString(), passwordEditText.getText().toString())
+                    .onConnectionResult(isSuccess -> {
+                        if (isSuccess) {
+                            Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(this, "Failed", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .start();
+//            WifiUtilsBad.connectToWifi(this, networkNameEditText.getText().toString(), passwordEditText.getText().toString())
+//                    .observeOn(AndroidSchedulers.mainThread())
+//                    .subscribe(() -> Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show(),
+//                               t -> Toast.makeText(this, "Failed", Toast.LENGTH_SHORT).show());
+        });
+
+        recaptureButton.setOnClickListener(v -> {
+            cameraView.start();
+            showCaptureImage();
+        });
 
 
         cameraView.addCameraListener(new CameraListener() {
             @Override
             public void onPictureTaken(byte[] picture) {
+                cameraView.stop();
+
                 CameraUtils.decodeBitmap(picture, new CameraUtils.BitmapCallback() {
                     @Override
                     public void onBitmapReady(Bitmap bitmap) {
-                        capturedImage.setImageBitmap(bitmap);
+//                        capturedImage.setImageBitmap(bitmap);
 
                         ParsingUtils.parseNetworkCredentials(PhotoActivity.this, bitmap)
-                            .doOnNext(creds -> {
-                                scannedText.setText(creds.getSsid() + "," + creds.getPassword());
-                            })
-                            .flatMapCompletable(creds ->
-                                    WifiUtils.connectToWifi(PhotoActivity.this,
-                                            creds.getSsid(),
-                                            creds.getPassword())
-                            )
-                            .subscribe();
+                            .onErrorReturnItem(new ParsingUtils.NetworkCredentials("", ""))
+                            .subscribe(creds -> {
+                                showWifiDetails();
+                                networkNameEditText.setText(creds.getSsid());
+                                passwordEditText.setText(creds.getPassword());
+                            });
                     }
                 });
             }
@@ -82,25 +157,52 @@ public class PhotoActivity extends AppCompatActivity {
         captureImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                showLoading();
                 cameraView.captureSnapshot();
 
-                cameraView.setVisibility(View.GONE);
-                captureImage.setVisibility(View.GONE);
+                //cameraView.setVisibility(View.GONE);
+              //  captureImage.setVisibility(View.GONE);
 
-                capturedImage.setVisibility(View.VISIBLE);
-                newImage.setVisibility(View.VISIBLE);
-                scannedText.setVisibility(View.VISIBLE);
+//                capturedImage.setVisibility(View.VISIBLE);
+  //              newImage.setVisibility(View.VISIBLE);
+    //            scannedText.setVisibility(View.VISIBLE);
             }
         });
 
-        newImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(PhotoActivity.this, PhotoActivity.class);
-                startActivity(intent);
-                finish();
-            }
-        });
+//        newImage.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                Intent intent = new Intent(PhotoActivity.this, PhotoActivity.class);
+//                startActivity(intent);
+//                finish();
+//            }
+//        });
+    }
+
+    private void showCaptureImage() {
+        captureImageLayout.setVisibility(View.VISIBLE);
+        loadingLayout.setVisibility(View.GONE);
+        connectToWifiLayout.setVisibility(View.GONE);
+    }
+
+    private void showLoading() {
+        captureImageLayout.setVisibility(View.GONE);
+        loadingLayout.setVisibility(View.VISIBLE);
+        connectToWifiLayout.setVisibility(View.GONE);
+    }
+
+    private void showWifiDetails() {
+        captureImageLayout.setVisibility(View.GONE);
+        loadingLayout.setVisibility(View.GONE);
+        connectToWifiLayout.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (captureImageLayout.getVisibility() == View.VISIBLE) {
+            super.onBackPressed();
+        }
+        showCaptureImage();
     }
 
     private String saveToInternalStorage(Bitmap bitmapImage){
