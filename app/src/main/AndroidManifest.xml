@@ -17,18 +17,24 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity
-            android:name=".view.PhotoActivity"
-            android:theme="@style/AppTheme">
+
+        <activity android:name=".view.SplashScreenActivity"
+            android:theme="@style/SplashTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <activity
+            android:name=".view.PhotoActivity"
+            android:theme="@style/AppTheme">
+
         <activity
             android:name=".view.ConnectedActivity"
-            android:theme="@style/AppTheme"></activity>
+            android:theme="@style/AppTheme"/>
+
+        </activity>
     </application>
 
 </manifest>
