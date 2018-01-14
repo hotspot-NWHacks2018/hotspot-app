@@ -5,6 +5,8 @@ import android.graphics.Bitmap;
 
 import com.googlecode.tesseract.android.TessBaseAPI;
 
+import java.util.Arrays;
+
 import io.reactivex.Observable;
 import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -18,18 +20,41 @@ import io.reactivex.schedulers.Schedulers;
 public class ParsingUtils {
 
     public static Observable<NetworkCredentials> parseNetworkCredentials(Context context, Bitmap image) {
-        TessBaseAPI tessBaseAPI = TessUtils.getTestBaseApi(context);
-        return Observable.just(tessBaseAPI)
+        return Observable.just("")
                 .observeOn(Schedulers.io())
+                .map(__ -> TessUtils.getTestBaseApi(context))
                 .doOnNext(api -> api.setImage(image))
                 .map(api -> api.getUTF8Text())
+                .onErrorReturnItem("")
                 .map(ParsingUtils::parseStringToNetworkCreds)
                 .observeOn(AndroidSchedulers.mainThread());
     }
 
     private static NetworkCredentials parseStringToNetworkCreds(String rawNetworkCreds) {
         String[] tokenizedNetworkCreds = rawNetworkCreds.split("[!@#$%^&*():[\\\\]\\s]+");
-        return new NetworkCredentials(tokenizedNetworkCreds[1], tokenizedNetworkCreds[3]);
+
+        if (tokenizedNetworkCreds.length == 4) {
+            // most likely 2 of those words are labels for the ssid and pass
+            return new NetworkCredentials(tokenizedNetworkCreds[1], tokenizedNetworkCreds[3]);
+        } else if (tokenizedNetworkCreds.length > 4) {
+            String ssidGuess = "";
+            String passGuess = "";
+
+            for (String token: tokenizedNetworkCreds) {
+                if (token.length() > ssidGuess.length() && ssidGuess.isEmpty()) {
+                    ssidGuess = token;
+                } else if (token.length() > ssidGuess.length() && passGuess.isEmpty()) {
+                    passGuess = token;
+                } else if (token.length() > passGuess.length()) {
+                    ssidGuess = passGuess;
+                    passGuess = token;
+                }
+            }
+
+            return new NetworkCredentials(ssidGuess, passGuess);
+        }
+        // we tried but couldnt make anything good enough out
+        return new NetworkCredentials("", "");
     }
 
     public static class NetworkCredentials {

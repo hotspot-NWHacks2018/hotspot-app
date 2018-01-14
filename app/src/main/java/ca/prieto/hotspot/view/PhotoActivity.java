@@ -197,6 +197,14 @@ public class PhotoActivity extends AppCompatActivity {
         connectToWifiLayout.setVisibility(View.VISIBLE);
     }
 
+    @Override
+    public void onBackPressed() {
+        if (captureImageLayout.getVisibility() == View.VISIBLE) {
+            super.onBackPressed();
+        }
+        showCaptureImage();
+    }
+
     private String saveToInternalStorage(Bitmap bitmapImage){
         ContextWrapper contextWrapper = new ContextWrapper(getApplicationContext());
 
