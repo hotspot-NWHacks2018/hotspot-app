@@ -28,7 +28,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import ca.prieto.hotspot.R;
 import ca.prieto.hotspot.utils.ImageUtils;
@@ -56,7 +59,6 @@ public class PhotoActivity extends AppCompatActivity {
 
         capturedImage.setVisibility(View.GONE);
         newImage.setVisibility(View.GONE);
-        scannedText.setVisibility(View.GONE);
 
 
         cameraView.addCameraListener(new CameraListener() {
@@ -76,7 +78,9 @@ public class PhotoActivity extends AppCompatActivity {
                         String OCRresult = null;
                         mTess.setImage(bitmap);
                         OCRresult = mTess.getUTF8Text();
-                        scannedText.setText(OCRresult);
+
+                        List<String> parsedText = parseText(OCRresult);
+                        scannedText.setText(parsedText.get(parsedText.size() - 1));
                     }
                 });
             }
@@ -192,7 +196,11 @@ public class PhotoActivity extends AppCompatActivity {
         cameraView.destroy();
     }
 
-    private ArrayList<String> parseText(String text) {
+    private List<String> parseText(String text) {
+        List<String> values;
 
+        values = Arrays.asList(text.split("\\s+"));
+
+        return values;
     }
 }
