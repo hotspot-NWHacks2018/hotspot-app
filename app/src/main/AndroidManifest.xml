@@ -28,13 +28,11 @@
         
         <activity
             android:name=".view.PhotoActivity"
-            android:theme="@style/AppTheme">
+            android:theme="@style/AppTheme"/>
 
         <activity
             android:name=".view.ConnectedActivity"
             android:theme="@style/AppTheme"/>
-
-        </activity>
     </application>
 
 </manifest>
