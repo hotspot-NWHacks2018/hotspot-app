@@ -2,13 +2,14 @@ package ca.prieto.hotspot.utils;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.util.Log;
 
-import com.googlecode.tesseract.android.TessBaseAPI;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import io.reactivex.Observable;
-import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 
@@ -31,13 +32,28 @@ public class ParsingUtils {
     }
 
     private static NetworkCredentials parseStringToNetworkCreds(String rawNetworkCreds) {
-        String[] tokenizedNetworkCreds = rawNetworkCreds.split("[!@#$%^&*():[\\\\]\\s]+");
+        String[] tokenizedNetworkCreds = rawNetworkCreds.split("[:\\s]+");
+        int noiseLimit = 7;
+        Log.d("TokenizedData", Arrays.toString(tokenizedNetworkCreds));
 
-        if (tokenizedNetworkCreds.length >= 4) {
+        List<String> cleansedTokens = new ArrayList<>();
+        for (String token: tokenizedNetworkCreds) {
+            if (token.length() >= 3) {
+                cleansedTokens.add(token);
+            } else if (tokenizedNetworkCreds.length < noiseLimit && !cleansedTokens.isEmpty()) {
+                int size = cleansedTokens.size();
+                cleansedTokens.set(size - 1, cleansedTokens.get(size - 1) + token);
+            }
+        }
+
+        Log.d("CleansedData", Arrays.toString(cleansedTokens.toArray()));
+
+        if (cleansedTokens.size() >= 4) {
             // most likely 2 of those words are labels for the ssid and pass
-            return new NetworkCredentials(tokenizedNetworkCreds[1], tokenizedNetworkCreds[3]);
-        } else if (tokenizedNetworkCreds.length == 2) {
-            return new NetworkCredentials(tokenizedNetworkCreds[0], tokenizedNetworkCreds[1]);
+            return new NetworkCredentials(cleansedTokens.get(1), cleansedTokens.get(3));
+        } else if (cleansedTokens.size() == 2) {
+            // we're going to assume the first item is the ssid and the next is the password
+            return new NetworkCredentials(cleansedTokens.get(0), cleansedTokens.get(1));
         }
         // we tried but couldnt make anything good enough out
         return new NetworkCredentials("", "");

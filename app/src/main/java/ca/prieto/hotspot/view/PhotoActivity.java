@@ -3,6 +3,7 @@ package ca.prieto.hotspot.view;
 import android.Manifest;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Build;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -22,6 +23,8 @@ import com.karumi.dexter.listener.single.PermissionListener;
 import com.otaliastudios.cameraview.CameraListener;
 import com.otaliastudios.cameraview.CameraUtils;
 import com.otaliastudios.cameraview.CameraView;
+import com.otaliastudios.cameraview.Gesture;
+import com.otaliastudios.cameraview.GestureAction;
 import com.thanosfisherman.wifiutils.WifiUtils;
 
 import ca.prieto.hotspot.R;
@@ -46,10 +49,8 @@ public class PhotoActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            Window w = getWindow();
-            w.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-        }
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
 
         Dexter.withActivity(this)
                 .withPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -79,9 +80,11 @@ public class PhotoActivity extends AppCompatActivity {
         actionCard.setY(500);
         actionCard.animate().translationYBy(-500).setDuration(2).start();
 
-        showCaptureImage();
-
         cameraView = findViewById(R.id.cameraView);
+        cameraView.mapGesture(Gesture.PINCH, GestureAction.ZOOM); // Pinch to zoom!
+        cameraView.mapGesture(Gesture.TAP, GestureAction.FOCUS_WITH_MARKER); // Tap to focus!
+        cameraView.mapGesture(Gesture.LONG_TAP, GestureAction.CAPTURE);
+
         captureImage = findViewById(R.id.captureImage);
 
         recaptureButton = findViewById(R.id.recaptureButton);
@@ -97,7 +100,7 @@ public class PhotoActivity extends AppCompatActivity {
                             startActivity(new Intent(this, ConnectedActivity.class));
                             finish();
                         } else {
-                            Snackbar.make(actionCard, "Could not connect. Please verify the details above.", Snackbar.LENGTH_SHORT).show();
+                            Snackbar.make(actionCard, "Cou ld not connect. Please verify the details above.", Snackbar.LENGTH_SHORT).show();
                         }
                     })
                     .start();
@@ -114,19 +117,13 @@ public class PhotoActivity extends AppCompatActivity {
             public void onPictureTaken(byte[] picture) {
                 cameraView.stop();
 
-                CameraUtils.decodeBitmap(picture, new CameraUtils.BitmapCallback() {
-                    @Override
-                    public void onBitmapReady(Bitmap bitmap) {
-//                        capturedImage.setImageBitmap(bitmap);
-
-                        ParsingUtils.parseNetworkCredentials(PhotoActivity.this, bitmap)
-                            .onErrorReturnItem(new ParsingUtils.NetworkCredentials("", ""))
-                            .subscribe(creds -> {
-                                showWifiDetails();
-                                networkNameEditText.setText(creds.getSsid());
-                                passwordEditText.setText(creds.getPassword());
-                            });
-                    }
+                CameraUtils.decodeBitmap(picture, bitmap -> {
+                    ParsingUtils.parseNetworkCredentials(PhotoActivity.this, bitmap)
+                        .subscribe(creds -> {
+                            showWifiDetails();
+                            networkNameEditText.setText(creds.getSsid());
+                            passwordEditText.setText(creds.getPassword());
+                        });
                 });
             }
         });
@@ -135,12 +132,15 @@ public class PhotoActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 showLoading();
-                cameraView.captureSnapshot();
+                cameraView.capturePicture();
             }
         });
+
+        showCaptureImage();
     }
 
     private void showCaptureImage() {
+        cameraView.start();
         captureImageLayout.setVisibility(View.VISIBLE);
         loadingLayout.setVisibility(View.GONE);
         connectToWifiLayout.setVisibility(View.GONE);
